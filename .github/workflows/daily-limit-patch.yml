@@ -32,3 +32,5 @@ jobs:
           git add index.html
           git commit -m 'Make daily spending limit count down during day'
           git push
+
+# Triggered after workflow creation.
