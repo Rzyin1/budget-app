@@ -32,8 +32,8 @@ jobs:
               raise SystemExit('renderBudget target not found')
           s=s.replace(old2,new2,1)
 
-          old3="state.daysEnded++;save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')"
-          new3="state.daysEnded++;state.dailyAllowanceDate='';state.dailyAllowanceStart=null;save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')"
+          old3="state.daysEnded++;$('#spendDate').value=currentBudgetDate();save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')"
+          new3="state.daysEnded++;state.dailyAllowanceDate='';state.dailyAllowanceStart=null;$('#spendDate').value=currentBudgetDate();save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')"
           if old3 not in s:
               raise SystemExit('End Day target not found')
           s=s.replace(old3,new3,1)
