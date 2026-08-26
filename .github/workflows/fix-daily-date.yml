@@ -1,0 +1,42 @@
+name: Fix daily spending date behavior
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-daily-date.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch displayed budget day date behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="function resetTxForm(){ $('#editTxId').value='';$('#spendDesc').value='';$('#spendAmount').value='';$('#saveTxBtn').textContent='Add Transaction';$('#cancelEditTx').classList.add('hidden')}"
+          new="function currentBudgetDate(){return state.startDate?addDays(state.startDate,Math.min(state.daysEnded,13)):todayStr()}\nfunction resetTxForm(){ $('#editTxId').value='';$('#spendDesc').value='';$('#spendAmount').value='';$('#spendDate').value=currentBudgetDate();$('#saveTxBtn').textContent='Add Transaction';$('#cancelEditTx').classList.add('hidden')}"
+          if old not in s: raise SystemExit('resetTxForm target not found')
+          s=s.replace(old,new,1)
+          old2="$('#endDayBtn').onclick=()=>{if(!state.startDate)return status('Start a paycheck period first.');if(state.daysEnded>=14)return status('This pay period is already complete.');const date=addDays(state.startDate,state.daysEnded);if(!state.completedDays.includes(date))state.completedDays.push(date);state.daysEnded++;save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')};"
+          new2="$('#endDayBtn').onclick=()=>{if(!state.startDate)return status('Start a paycheck period first.');if(state.daysEnded>=14)return status('This pay period is already complete.');const date=addDays(state.startDate,state.daysEnded);if(!state.completedDays.includes(date))state.completedDays.push(date);state.daysEnded++;$('#spendDate').value=currentBudgetDate();save();renderAll();status(state.daysEnded<14?`Ended ${niceDate(date)}.`:'14-day period complete. Start your next paycheck period when ready.')};"
+          if old2 not in s: raise SystemExit('endDay target not found')
+          s=s.replace(old2,new2,1)
+          old3="['#spendDate','#cornDate','#periodStartInput','#savingsDate','#tourDate','#eventDate','#smokePurchaseDate'].forEach(s=>{if($(s))$(s).value=todayStr()});"
+          new3="['#cornDate','#periodStartInput','#savingsDate','#tourDate','#eventDate','#smokePurchaseDate'].forEach(s=>{if($(s))$(s).value=todayStr()});$('#spendDate').value=currentBudgetDate();"
+          if old3 not in s: raise SystemExit('initial date target not found')
+          s=s.replace(old3,new3,1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'Budget App Updater'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix daily spending countdown date behavior'
+          git push
