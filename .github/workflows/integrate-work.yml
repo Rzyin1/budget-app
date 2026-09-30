@@ -1,4 +1,4 @@
-name: Fix Work page integration
+name: Update Work revision sold metric
 
 on:
   push:
@@ -14,53 +14,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fix Work page and integration
+      - name: Replace RO Bonus with Revision Sold
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import re
 
-          # Make Edit/Delete actions permanently visible on the right side of both tables.
           w = Path('work.html')
-          ws = w.read_text()
-          sticky = 'th:last-child,td:last-child{position:sticky;right:0;background:var(--panel);z-index:2;white-space:nowrap}th:last-child{z-index:3}'
-          if sticky not in ws:
-              ws = ws.replace('</style>', sticky + '</style>', 1)
-          w.write_text(ws)
+          s = w.read_text()
+          s = s.replace('<div class="muted">RO Bonus</div><div class="metric good" id="bonus"></div>', '<div class="muted">Revision Sold</div><div class="metric good" id="bonus"></div>')
+          s = s.replace("$('#bonus').textContent=money(ro*BONUS);", "$('#bonus').textContent=ros.filter(x=>Number(x.revSold)).length;")
+          w.write_text(s)
 
-          # Clean the main app down to one Work page and one Work nav button.
           p = Path('index.html')
           s = p.read_text()
-          s = re.sub(r'( · Work)+', ' · Work', s)
-          s = re.sub(r'\s*<section class="page hidden" id="workPage">.*?</section>\s*', '\n', s, flags=re.S)
-          marker = '  <div id="status" class="sub status" aria-live="polite"></div>'
-          if marker not in s:
-              raise SystemExit('status marker missing')
-          section = '''  <section class="page hidden" id="workPage">
-    <div class="card" style="padding:0;overflow:hidden">
-      <iframe id="workFrame" src="work.html?v=20260930-edit-visible-2" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
-    </div>
-  </section>
-
-'''
-          s = s.replace(marker, section + marker, 1)
-          s = re.sub(r'<button data-page="workPage">Work</button>', '', s)
-          smokes = '<button data-page="smokesPage">Smokes</button>'
-          if smokes not in s:
-              raise SystemExit('smokes nav missing')
-          s = s.replace(smokes, smokes + '<button data-page="workPage">Work</button>', 1)
+          s = s.replace('work.html?v=20260930-edit-visible-2', 'work.html?v=20260930-revision-sold')
+          s = s.replace('work.html?v=20260930-edit', 'work.html?v=20260930-revision-sold')
+          s = s.replace('src="work.html"', 'src="work.html?v=20260930-revision-sold"')
           p.write_text(s)
           PY
-      - name: Commit fixes
+      - name: Commit change
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html work.html
+          git add work.html index.html
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Fix Work edit button visibility"
+            git commit -m "Replace RO bonus with revision sold count"
             git push
           fi
