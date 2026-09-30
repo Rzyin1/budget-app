@@ -14,19 +14,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add Work tab to Budget Tracker
+      - name: Update Work dropdowns and integrate tab
         shell: bash
         run: |
-          python3 -c 'from pathlib import Path; p=Path("index.html"); s=p.read_text(); s=s.replace("Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes","Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes · Work"); marker="  <div id=\"status\" class=\"sub status\" aria-live=\"polite\"></div>"; section="  <section class=\"page hidden\" id=\"workPage\">\n    <div class=\"card\" style=\"padding:0;overflow:hidden\">\n      <iframe id=\"workFrame\" src=\"work.html\" title=\"Work Tracker\" style=\"width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)\"></iframe>\n    </div>\n  </section>\n\n"; s=s if "id=\"workPage\"" in s else s.replace(marker,section+marker,1); old="<button data-page=\"smokesPage\">Smokes</button></nav>"; new="<button data-page=\"smokesPage\">Smokes</button><button data-page=\"workPage\">Work</button></nav>"; s=s if "data-page=\"workPage\"" in s else s.replace(old,new,1); p.write_text(s)'
+          python3 <<'PY'
+          from pathlib import Path
+
+          w = Path("work.html")
+          s = w.read_text()
+          s = s.replace('<select id="mpi"><option>Yes</option><option>No</option><option>Prev</option></select>', '<select id="mpi"><option>Yes</option><option>No</option></select>')
+          s = s.replace('<select id="revMade"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revMade"><option value="1">Yes</option><option value="0">No</option></select>')
+          s = s.replace('<select id="revSold"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revSold"><option value="1">Yes</option><option value="0">No</option></select>')
+          w.write_text(s)
+
+          p = Path("index.html")
+          s = p.read_text()
+          s = s.replace("Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes", "Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes · Work")
+          marker = '  <div id="status" class="sub status" aria-live="polite"></div>'
+          section = '  <section class="page hidden" id="workPage">\n    <div class="card" style="padding:0;overflow:hidden">\n      <iframe id="workFrame" src="work.html" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>\n    </div>\n  </section>\n\n'
+          if 'id="workPage"' not in s:
+              s = s.replace(marker, section + marker, 1)
+          old = '<button data-page="smokesPage">Smokes</button></nav>'
+          new = '<button data-page="smokesPage">Smokes</button><button data-page="workPage">Work</button></nav>'
+          if 'data-page="workPage"' not in s:
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
       - name: Commit change
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html work.html
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Add Work tab to main budget app"
+            git commit -m "Use Yes No dropdowns for Work tracker"
             git push
           fi
