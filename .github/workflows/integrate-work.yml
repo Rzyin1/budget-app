@@ -1,4 +1,4 @@
-name: Integrate Work page
+name: Fix Work page integration
 
 on:
   push:
@@ -14,51 +14,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Clean duplicate Work integrations and connect current tracker
+      - name: Fix Work page and integration
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
           import re
 
-          p = Path("index.html")
+          # Make Edit/Delete actions permanently visible on the right side of both tables.
+          w = Path('work.html')
+          ws = w.read_text()
+          sticky = 'th:last-child,td:last-child{position:sticky;right:0;background:var(--panel);z-index:2;white-space:nowrap}th:last-child{z-index:3}'
+          if sticky not in ws:
+              ws = ws.replace('</style>', sticky + '</style>', 1)
+          w.write_text(ws)
+
+          # Clean the main app down to one Work page and one Work nav button.
+          p = Path('index.html')
           s = p.read_text()
-
-          # Normalize the subtitle so Work appears once.
           s = re.sub(r'( · Work)+', ' · Work', s)
-
-          # Remove every old Work iframe section, then add exactly one current section.
           s = re.sub(r'\s*<section class="page hidden" id="workPage">.*?</section>\s*', '\n', s, flags=re.S)
           marker = '  <div id="status" class="sub status" aria-live="polite"></div>'
+          if marker not in s:
+              raise SystemExit('status marker missing')
           section = '''  <section class="page hidden" id="workPage">
     <div class="card" style="padding:0;overflow:hidden">
-      <iframe id="workFrame" src="work.html?v=20260930-edit" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
+      <iframe id="workFrame" src="work.html?v=20260930-edit-visible-2" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
     </div>
   </section>
 
 '''
-          if marker not in s:
-              raise SystemExit('Status marker not found; refusing unsafe edit')
           s = s.replace(marker, section + marker, 1)
-
-          # Remove every old Work nav button and add exactly one after Smokes.
           s = re.sub(r'<button data-page="workPage">Work</button>', '', s)
           smokes = '<button data-page="smokesPage">Smokes</button>'
           if smokes not in s:
-              raise SystemExit('Smokes nav button not found; refusing unsafe edit')
+              raise SystemExit('smokes nav missing')
           s = s.replace(smokes, smokes + '<button data-page="workPage">Work</button>', 1)
-
           p.write_text(s)
           PY
-      - name: Commit change
+      - name: Commit fixes
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html work.html
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Clean duplicate Work tab integrations"
+            git commit -m "Fix Work edit button visibility"
             git push
           fi
