@@ -32,7 +32,7 @@ a{color:var(--accent);overflow-wrap:anywhere}.moneyIn{color:var(--good);font-wei
 <body>
 <div class="app" id="app">
   <div class="top">
-    <div><div class="title">Budget Tracker</div><div class="sub">Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes</div></div>
+    <div><div class="title">Budget Tracker</div><div class="sub">Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes · Work</div></div>
     <div class="row">
       <button class="btn small" id="settingsBtn">⚙ Settings</button>
       <button class="btn small" id="exportBtn">Export Backup</button>
@@ -174,8 +174,14 @@ a{color:var(--accent);overflow-wrap:anywhere}.moneyIn{color:var(--good);font-wei
     <div class="card section"><h2>Pack Opening History</h2><div class="tablewrap"><table><thead><tr><th>Date</th><th>Time</th><th>Pack #</th><th>Time Since Previous</th><th>Supply After</th></tr></thead><tbody id="smokeOpenBody"></tbody></table></div></div>
   </section>
 
+  <section class="page hidden" id="workPage">
+    <div class="card" style="padding:0;overflow:hidden">
+      <iframe id="workFrame" src="work.html" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
+    </div>
+  </section>
+
   <div id="status" class="sub status" aria-live="polite"></div>
-  <nav class="nav"><button class="active" data-page="spendingPage">Spending</button><button data-page="statementsPage">Statements</button><button data-page="graphsPage">Graphs</button><button data-page="savingsPage">Savings</button><button data-page="debtPage">Debt</button><button data-page="cornholePage">Cornhole</button><button data-page="calendarPage">Calendar</button><button data-page="historyPage">History</button><button data-page="buyPage">To Buy</button><button data-page="billsPage">Bills</button><button data-page="smokesPage">Smokes</button></nav>
+  <nav class="nav"><button class="active" data-page="spendingPage">Spending</button><button data-page="statementsPage">Statements</button><button data-page="graphsPage">Graphs</button><button data-page="savingsPage">Savings</button><button data-page="debtPage">Debt</button><button data-page="cornholePage">Cornhole</button><button data-page="calendarPage">Calendar</button><button data-page="historyPage">History</button><button data-page="buyPage">To Buy</button><button data-page="billsPage">Bills</button><button data-page="smokesPage">Smokes</button><button data-page="workPage">Work</button></nav>
 </div>
 <script>
 (()=> {
