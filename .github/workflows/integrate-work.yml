@@ -1,0 +1,58 @@
+name: Integrate Work page
+
+on:
+  push:
+    paths:
+      - '.github/workflows/integrate-work.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add Work page to main app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+
+          s = s.replace(
+            'Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes',
+            'Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes · Work'
+          )
+
+          marker = '  <div id="status" class="sub status" aria-live="polite"></div>'
+          work_section = '''  <section class="page hidden" id="workPage">
+    <div class="card" style="padding:0;overflow:hidden">
+      <iframe id="workFrame" src="work.html" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
+    </div>
+  </section>
+
+'''
+          if 'id="workPage"' not in s:
+            if marker not in s:
+              raise SystemExit('Could not find status marker in index.html')
+            s = s.replace(marker, work_section + marker, 1)
+
+          old_nav = '<button data-page="smokesPage">Smokes</button></nav>'
+          new_nav = '<button data-page="smokesPage">Smokes</button><button data-page="workPage">Work</button></nav>'
+          if 'data-page="workPage"' not in s:
+            if old_nav not in s:
+              raise SystemExit('Could not find Smokes navigation button')
+            s = s.replace(old_nav, new_nav, 1)
+
+          p.write_text(s)
+          PY
+      - name: Commit integrated Work page
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Add Work tab to main budget app"
+          git push
