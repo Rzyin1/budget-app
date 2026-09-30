@@ -1,4 +1,4 @@
-name: Update Work revision sold metric
+name: Update Work revision sold dollars
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Replace RO Bonus with Revision Sold
+      - name: Show Revision Sold dollars
         shell: bash
         run: |
           python3 <<'PY'
@@ -23,14 +23,15 @@ jobs:
           w = Path('work.html')
           s = w.read_text()
           s = s.replace('<div class="muted">RO Bonus</div><div class="metric good" id="bonus"></div>', '<div class="muted">Revision Sold</div><div class="metric good" id="bonus"></div>')
-          s = s.replace("$('#bonus').textContent=money(ro*BONUS);", "$('#bonus').textContent=ros.filter(x=>Number(x.revSold)).length;")
+          s = s.replace("$('#bonus').textContent=money(ro*BONUS);", "$('#bonus').textContent=money(ros.filter(x=>Number(x.revSold)).reduce((a,x)=>a+(Number(x.revDollars)||0),0));")
+          s = s.replace("$('#bonus').textContent=ros.filter(x=>Number(x.revSold)).length;", "$('#bonus').textContent=money(ros.filter(x=>Number(x.revSold)).reduce((a,x)=>a+(Number(x.revDollars)||0),0));")
           w.write_text(s)
 
           p = Path('index.html')
           s = p.read_text()
-          s = s.replace('work.html?v=20260930-edit-visible-2', 'work.html?v=20260930-revision-sold')
-          s = s.replace('work.html?v=20260930-edit', 'work.html?v=20260930-revision-sold')
-          s = s.replace('src="work.html"', 'src="work.html?v=20260930-revision-sold"')
+          for old in ['work.html?v=20260930-revision-sold','work.html?v=20260930-edit-visible-2','work.html?v=20260930-edit']:
+              s = s.replace(old, 'work.html?v=20260930-revision-sold-dollars')
+          s = s.replace('src="work.html"', 'src="work.html?v=20260930-revision-sold-dollars"')
           p.write_text(s)
           PY
       - name: Commit change
@@ -42,6 +43,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Replace RO bonus with revision sold count"
+            git commit -m "Show revision sold dollar total"
             git push
           fi
