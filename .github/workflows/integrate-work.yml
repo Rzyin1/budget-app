@@ -14,31 +14,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Work tracker and integrate tab
+      - name: Clean duplicate Work integrations and connect current tracker
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
-
-          w = Path("work.html")
-          s = w.read_text()
-          s = s.replace('2026-10-01', '2026-09-17')
-          s = s.replace('<select id="mpi"><option>Yes</option><option>No</option><option>Prev</option></select>', '<select id="mpi"><option>Yes</option><option>No</option></select>')
-          s = s.replace('<select id="revMade"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revMade"><option value="1">Yes</option><option value="0">No</option></select>')
-          s = s.replace('<select id="revSold"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revSold"><option value="1">Yes</option><option value="0">No</option></select>')
-          w.write_text(s)
+          import re
 
           p = Path("index.html")
           s = p.read_text()
-          s = s.replace("Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes", "Spending · Statements · Graphs · Savings · Debt · Cornhole · Calendar · History · To Buy · Bills · Smokes · Work")
+
+          # Normalize the subtitle so Work appears once.
+          s = re.sub(r'( · Work)+', ' · Work', s)
+
+          # Remove every old Work iframe section, then add exactly one current section.
+          s = re.sub(r'\s*<section class="page hidden" id="workPage">.*?</section>\s*', '\n', s, flags=re.S)
           marker = '  <div id="status" class="sub status" aria-live="polite"></div>'
-          section = '  <section class="page hidden" id="workPage">\n    <div class="card" style="padding:0;overflow:hidden">\n      <iframe id="workFrame" src="work.html" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>\n    </div>\n  </section>\n\n'
-          if 'id="workPage"' not in s:
-              s = s.replace(marker, section + marker, 1)
-          old = '<button data-page="smokesPage">Smokes</button></nav>'
-          new = '<button data-page="smokesPage">Smokes</button><button data-page="workPage">Work</button></nav>'
-          if 'data-page="workPage"' not in s:
-              s = s.replace(old, new, 1)
+          section = '''  <section class="page hidden" id="workPage">
+    <div class="card" style="padding:0;overflow:hidden">
+      <iframe id="workFrame" src="work.html?v=20260930-edit" title="Work Tracker" style="width:100%;height:calc(100vh - 155px);min-height:760px;border:0;background:var(--bg)"></iframe>
+    </div>
+  </section>
+
+'''
+          if marker not in s:
+              raise SystemExit('Status marker not found; refusing unsafe edit')
+          s = s.replace(marker, section + marker, 1)
+
+          # Remove every old Work nav button and add exactly one after Smokes.
+          s = re.sub(r'<button data-page="workPage">Work</button>', '', s)
+          smokes = '<button data-page="smokesPage">Smokes</button>'
+          if smokes not in s:
+              raise SystemExit('Smokes nav button not found; refusing unsafe edit')
+          s = s.replace(smokes, smokes + '<button data-page="workPage">Work</button>', 1)
+
           p.write_text(s)
           PY
       - name: Commit change
@@ -46,10 +55,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html work.html
+          git add index.html
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Enable Sep 17-30 work pay period"
+            git commit -m "Clean duplicate Work tab integrations"
             git push
           fi
