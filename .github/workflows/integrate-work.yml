@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Work dropdowns and integrate tab
+      - name: Update Work tracker and integrate tab
         shell: bash
         run: |
           python3 <<'PY'
@@ -22,6 +22,7 @@ jobs:
 
           w = Path("work.html")
           s = w.read_text()
+          s = s.replace('2026-10-01', '2026-09-17')
           s = s.replace('<select id="mpi"><option>Yes</option><option>No</option><option>Prev</option></select>', '<select id="mpi"><option>Yes</option><option>No</option></select>')
           s = s.replace('<select id="revMade"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revMade"><option value="1">Yes</option><option value="0">No</option></select>')
           s = s.replace('<select id="revSold"><option value="0">-</option><option value="1">Yes</option></select>', '<select id="revSold"><option value="1">Yes</option><option value="0">No</option></select>')
@@ -49,6 +50,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Use Yes No dropdowns for Work tracker"
+            git commit -m "Enable Sep 17-30 work pay period"
             git push
           fi
